@@ -11,11 +11,6 @@ def main():
     print("=" * 60)
     print("PREPARE SROIE FOR LAYOUTLMV3")
     print("=" * 60)
-
-    # ---------------------------------------------------------
-    # 1. Load SROIE
-    # ---------------------------------------------------------
-
     print("\n[1] Loading SROIE dataset...")
 
     dataset = load_dataset("mp-02/sroie")
@@ -25,11 +20,6 @@ def main():
     train_dataset = dataset["train"]
 
     print(f"Train samples: {len(train_dataset)}")
-
-
-    # ---------------------------------------------------------
-    # 2. Load label information
-    # ---------------------------------------------------------
 
     print("\n[2] Loading label information...")
 
@@ -53,10 +43,6 @@ def main():
         print(f"{idx}: {label}")
 
 
-    # ---------------------------------------------------------
-    # 3. Load LayoutLMv3 processor
-    # ---------------------------------------------------------
-
     print("\n[3] Loading LayoutLMv3 processor...")
 
     processor = LayoutLMv3Processor.from_pretrained(
@@ -65,11 +51,6 @@ def main():
     )
 
     print("Processor loaded.")
-
-
-    # ---------------------------------------------------------
-    # 4. Get one sample
-    # ---------------------------------------------------------
 
     print("\n[4] Preparing one sample...")
 
@@ -86,19 +67,10 @@ def main():
     print(f"Number of labels: {len(ner_tags)}")
 
 
-    # ---------------------------------------------------------
-    # 5. Convert labels from ClassLabel -> int
-    # ---------------------------------------------------------
-
     labels = []
 
     for tag in ner_tags:
         labels.append(int(tag))
-
-
-    # ---------------------------------------------------------
-    # 6. Run LayoutLMv3 processor
-    # ---------------------------------------------------------
 
     print("\n[5] Running LayoutLMv3Processor...")
 
@@ -113,11 +85,6 @@ def main():
         return_tensors="pt"
     )
 
-
-    # ---------------------------------------------------------
-    # 7. Inspect output
-    # ---------------------------------------------------------
-
     print("\n[6] Processor output:")
 
     for key, value in encoding.items():
@@ -126,11 +93,6 @@ def main():
             f"shape={tuple(value.shape)}, "
             f"dtype={value.dtype}"
         )
-
-
-    # ---------------------------------------------------------
-    # 8. Check labels
-    # ---------------------------------------------------------
 
     print("\n[7] Labels:")
 
@@ -143,11 +105,6 @@ def main():
     print(
         f"labels dtype: {encoded_labels.dtype}"
     )
-
-
-    # ---------------------------------------------------------
-    # 9. Inspect first 50 tokens
-    # ---------------------------------------------------------
 
     print("\n[8] Token / Label inspection:")
 
@@ -175,10 +132,6 @@ def main():
         )
 
 
-    # ---------------------------------------------------------
-    # 10. Check label statistics
-    # ---------------------------------------------------------
-
     print("\n[9] Encoded label statistics:")
 
     valid_labels = []
@@ -197,11 +150,6 @@ def main():
             f"{label_name:15s} "
             f"{count}"
         )
-
-
-    # ---------------------------------------------------------
-    # 11. Final verification
-    # ---------------------------------------------------------
 
     print("\n[10] Verification:")
 
