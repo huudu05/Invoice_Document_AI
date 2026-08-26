@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment variables / API keys
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Python cache
+.pytest_cache/
+.mypy_cache/
+
+# Data
+data/
+datasets/
+*.zip
+*.rar
+
+# Models / checkpoints
+models/
+checkpoints/
+*.pt
+*.pth
+*.onnx
+*.safetensors
+
+# ChromaDB
+chroma_db/
+chroma/
+*.sqlite3
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
