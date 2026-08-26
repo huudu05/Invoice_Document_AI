@@ -1,0 +1,16 @@
+{
+    "input_file": "invoice.pdf",
+    "page_number": 2,
+    "structured": {
+        "company": "LIGHTROOM GALLERY SDN BHD",
+        "date": "",
+        "address": "No:28,JALAN ASTANA 1C BANDAR BUKIT RAJA, 41050 KLANG SELANGOR D.E, MALAYSIA",
+        "total": "73.00"
+    },
+    "normalized": {
+        "company": "LIGHTROOM GALLERY SDN BHD",
+        "date": "",
+        "address": "No:28,JALAN ASTANA 1C BANDAR BUKIT RAJA, 41050 KLANG SELANGOR D.E, MALAYSIA",
+        "total": 73.0
+    }
+}

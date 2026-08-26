@@ -1,6 +1,7 @@
+import json
+import os
 import tempfile
 from pathlib import Path
-import torch
 import streamlit as st
  
 from src.input_processing.input_manager import InputManager
@@ -13,11 +14,13 @@ from src.processing.invoice_normalizer import InvoiceNormalizer
 from src.knowledge_base.chroma_store import ChromaInvoiceStore
 from src.pipeline.invoice_qa import InvoiceQA
  
-
+ 
 DEFAULT_MODEL_DIR = "models/layoutlmv3/best_model"
 DEFAULT_CHROMA_DIR = "data/chroma"
+DEFAULT_INFERENCE_DIR = "outputs/inference"
  
 st.set_page_config(page_title="Invoice Document AI", layout="wide")
+ 
  
 @st.cache_resource(show_spinner="Đang tải mô hình OCR + LayoutLMv3...")
 def load_extraction_pipeline(model_dir: str):
@@ -33,7 +36,6 @@ def load_extraction_pipeline(model_dir: str):
  
  
 def get_qa_engine(chroma_dir: str):
-
     if "qa_engine" not in st.session_state:
         try:
             st.session_state.qa_engine = InvoiceQA(
@@ -45,8 +47,13 @@ def get_qa_engine(chroma_dir: str):
     return st.session_state.qa_engine, None
  
  
+def extract_and_index(
+    uploaded_file,
+    pipeline: dict,
+    chroma_dir: str,
+    inference_dir: str,
+) -> list:
  
-def extract_and_index(uploaded_file, pipeline: dict, chroma_dir: str):
     suffix = Path(uploaded_file.name).suffix
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp_file:
         tmp_file.write(uploaded_file.getbuffer())
@@ -56,34 +63,67 @@ def extract_and_index(uploaded_file, pipeline: dict, chroma_dir: str):
     pages = pipeline["preprocessor"].process(pages)
  
     ocr_result = pipeline["ocr"].recognize(pages)
-    if not ocr_result.pages or not ocr_result.pages[0].words:
+    if not ocr_result.pages:
         raise ValueError("Không phát hiện được văn bản trên hóa đơn này.")
  
-    page = ocr_result.pages[0]
-    image = pages[0]
+    base_name = Path(uploaded_file.name).stem
+    is_multi_page = len(ocr_result.pages) > 1
  
-    words = [w.text for w in page.words]
-    boxes = [pipeline["box_builder"].quad_to_box(w.bbox) for w in page.words]
- 
-    structured = pipeline["model"].predict(image=image, words=words, boxes=boxes)
-    normalized = pipeline["normalizer"].normalize(structured)
- 
-    invoice_id = Path(uploaded_file.name).stem
     store = ChromaInvoiceStore(persist_directory=chroma_dir)
-    store.add_invoice(invoice_id, normalized)
+    Path(inference_dir).mkdir(parents=True, exist_ok=True)
  
-    vis_image = pipeline["visualizer"].visualize_page(image, page)
+    results = []
  
-    return {
-        "invoice_id": invoice_id,
-        "structured": structured,
-        "normalized": normalized,
-        "image": vis_image,
-    }
+    for image, page in zip(pages, ocr_result.pages):
+ 
+        if not page.words:
+            continue
+ 
+        words = [w.text for w in page.words]
+        boxes = [pipeline["box_builder"].quad_to_box(w.bbox) for w in page.words]
+ 
+        structured = pipeline["model"].predict(image=image, words=words, boxes=boxes)
+        normalized = pipeline["normalizer"].normalize(structured)
+ 
+        invoice_id = (
+            f"{base_name}_p{page.page_number}" if is_multi_page else base_name
+        )
+ 
+        store.add_invoice(invoice_id, normalized)
+ 
+        json_path = Path(inference_dir) / f"{invoice_id}_inference.json"
+        with open(json_path, "w", encoding="utf-8") as file:
+            json.dump(
+                {
+                    "input_file": uploaded_file.name,
+                    "page_number": page.page_number,
+                    "structured": structured,
+                    "normalized": normalized,
+                },
+                file,
+                indent=4,
+                ensure_ascii=False,
+            )
+ 
+        vis_image = pipeline["visualizer"].visualize_page(image, page)
+ 
+        results.append({
+            "invoice_id": invoice_id,
+            "structured": structured,
+            "normalized": normalized,
+            "image": vis_image,
+        })
+ 
+    if not results:
+        raise ValueError("Không phát hiện được văn bản trên bất kỳ trang nào.")
+ 
+    return results
+ 
  
 st.sidebar.title("⚙️ Cấu hình")
 model_dir = st.sidebar.text_input("Model LayoutLMv3", value=DEFAULT_MODEL_DIR)
 chroma_dir = st.sidebar.text_input("Thư mục ChromaDB", value=DEFAULT_CHROMA_DIR)
+inference_dir = st.sidebar.text_input("Thư mục lưu JSON inference", value=DEFAULT_INFERENCE_DIR)
  
 st.sidebar.markdown("---")
 st.sidebar.markdown(
@@ -105,7 +145,8 @@ if "chat_history" not in st.session_state:
 st.header("1. Tải hóa đơn lên")
  
 uploaded_files = st.file_uploader(
-    "Chọn ảnh hoặc PDF hóa đơn (có thể chọn nhiều file)",
+    "Chọn ảnh hoặc PDF hóa đơn (PDF nhiều trang = nhiều hóa đơn, "
+    "mỗi trang được xử lý riêng)",
     type=["png", "jpg", "jpeg", "pdf"],
     accept_multiple_files=True,
 )
@@ -117,9 +158,14 @@ if uploaded_files and st.button("🔍 Trích xuất & Lưu vào hệ thống", t
  
     for index, uploaded_file in enumerate(uploaded_files):
         try:
-            result = extract_and_index(uploaded_file, pipeline, chroma_dir)
-            st.session_state.indexed_invoices.append(result)
-            st.success(f"✅ Đã trích xuất & lưu: {uploaded_file.name}")
+            page_results = extract_and_index(
+                uploaded_file, pipeline, chroma_dir, inference_dir
+            )
+            st.session_state.indexed_invoices.extend(page_results)
+            st.success(
+                f"✅ Đã trích xuất & lưu {len(page_results)} hóa đơn "
+                f"từ: {uploaded_file.name}"
+            )
         except Exception as error:
             st.error(f"❌ Lỗi khi xử lý {uploaded_file.name}: {error}")
  
@@ -152,7 +198,6 @@ if st.session_state.indexed_invoices:
                     ],
                 })
  
-
  
 st.header("3. Hỏi đáp & Phân tích")
  

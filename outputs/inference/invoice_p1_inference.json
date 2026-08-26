@@ -1,0 +1,16 @@
+{
+    "input_file": "invoice.pdf",
+    "page_number": 1,
+    "structured": {
+        "company": "HOME MASTER HARDWARE& ELECTRICAL",
+        "date": "22/12/201714:03",
+        "address": "U13/EG BANDAR SETIA ALAM, 40170 BANDAR SETIA ALA, SELANGOR.",
+        "total": "15.90"
+    },
+    "normalized": {
+        "company": "HOME MASTER HARDWARE& ELECTRICAL",
+        "date": "2017-12-22",
+        "address": "U13/EG BANDAR SETIA ALAM, 40170 BANDAR SETIA ALA, SELANGOR.",
+        "total": 15.9
+    }
+}

@@ -23,7 +23,7 @@ Các thông tin chính được trích xuất gồm:
 ### Video Demonstration
 
 <p align="center">
-  <img src="assets/invoice_demo.gif" width="700">
+  <img src="assets/invoice_demo.gif" width="900">
   <br>
   <i>Demo hệ thống Invoice Document AI</i>
 </p>
