@@ -19,18 +19,18 @@ class InvoiceContextBuilder:
         if not results:
 
             return (
-                "Không tìm thấy hóa đơn "
-                "phù hợp với câu hỏi."
+                "No matching invoice "
+                "was found for this question."
             )
 
         sections = []
 
         sections.append(
-            f"Câu hỏi: {query}"
+            f"Question: {query}"
         )
 
         sections.append(
-            "Thông tin hóa đơn tìm được:"
+            "Invoice information found:"
         )
 
         for index, result in enumerate(
@@ -64,7 +64,7 @@ class InvoiceContextBuilder:
             )
 
             section = (
-                f"Hóa đơn {index}\n"
+                f"Invoice {index}\n"
                 f"- Company: {company}\n"
                 f"- Date: {date}\n"
                 f"- Address: {address}\n"
@@ -90,8 +90,8 @@ class InvoiceContextBuilder:
         if not results:
 
             return (
-                "Không tìm thấy thông tin "
-                "phù hợp."
+                "No relevant information "
+                "was found."
             )
 
         best_result = results[0]
@@ -122,8 +122,8 @@ class InvoiceContextBuilder:
         )
 
         return (
-            f"Câu hỏi: {query}\n\n"
-            f"Thông tin hóa đơn:\n"
+            f"Question: {query}\n\n"
+            f"Invoice information:\n"
             f"Company: {company}\n"
             f"Date: {date}\n"
             f"Address: {address}\n"
@@ -197,8 +197,8 @@ if __name__ == "__main__":
     ]
 
     query = (
-        "Hóa đơn của HOME MASTER HARDWARE "
-        "có tổng tiền bao nhiêu?"
+        "How much is the total "
+        "for the HOME MASTER HARDWARE invoice?"
     )
 
     print()

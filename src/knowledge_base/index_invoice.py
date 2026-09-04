@@ -4,37 +4,20 @@ from pathlib import Path
 from src.knowledge_base.chroma_store import ChromaInvoiceStore
  
  
-# ============================================================
-# CONFIGURATION
-# ============================================================
- 
 INFERENCE_DIR = Path("outputs/inference")
 CHROMA_DIR = Path("data/chroma")
 COLLECTION_NAME = "invoices"
  
  
-# ============================================================
-# LOAD JSON
-# ============================================================
- 
 def load_json(path: Path):
     with open(path, "r", encoding="utf-8") as file:
         return json.load(file)
- 
- 
-# ============================================================
-# MAIN
-# ============================================================
  
 def main():
     print()
     print("=" * 70)
     print("INVOICE KNOWLEDGE BASE INDEXING")
     print("=" * 70)
- 
-    # --------------------------------------------------------
-    # Validate inference directory
-    # --------------------------------------------------------
  
     if not INFERENCE_DIR.exists():
         raise FileNotFoundError(
@@ -50,20 +33,10 @@ def main():
  
     print(f"Found inference files: {len(json_files)}")
  
-    # --------------------------------------------------------
-    # Shared ChromaDB access (same class used by InvoiceRetriever
-    # and run_pipeline.py) - single source of truth for how an
-    # invoice is turned into a document + metadata.
-    # --------------------------------------------------------
- 
     store = ChromaInvoiceStore(
         persist_directory=str(CHROMA_DIR),
         collection_name=COLLECTION_NAME,
     )
- 
-    # --------------------------------------------------------
-    # Index documents
-    # --------------------------------------------------------
  
     indexed_count = 0
     skipped_count = 0
@@ -97,10 +70,6 @@ def main():
  
         indexed_count += 1
         print(f"[OK] Indexed: {invoice_id}")
- 
-    # --------------------------------------------------------
-    # Summary
-    # --------------------------------------------------------
  
     print()
     print("=" * 70)

@@ -22,17 +22,17 @@ def main():
     analytics = InvoiceAnalytics(store=qa.retriever.store)
  
     print("=" * 80)
-    print("DỮ LIỆU HIỆN CÓ TRONG HỆ THỐNG")
+    print("CURRENT DATA IN THE SYSTEM")
     print("=" * 80)
-    print(f"Tổng số hóa đơn: {len(analytics.invoices)}")
+    print(f"Total number of invoices: {len(analytics.invoices)}")
     for company, amount in analytics.spending_by_company().items():
-        print(f"  {company:<35} tổng: {amount}")
+        print(f"  {company:<35} total: {amount}")
  
     if len(analytics.invoices) < 2:
         print()
-        print("[CẢNH BÁO] Cần index ít nhất 2 hóa đơn từ CÔNG TY KHÁC NHAU "
-              "để test này có ý nghĩa (hiện tại chưa đủ). "
-              "Hãy chạy invoice_inference.py trên vài ảnh khác nhau trước.")
+        print("[WARNING] At least 2 invoices from DIFFERENT COMPANIES are required "
+              "for this test to be meaningful (currently not enough). "
+              "Please run invoice_inference.py on a few different images first.")
         return
  
     companies = list(analytics.spending_by_company().keys())
@@ -43,25 +43,26 @@ def main():
 
     # TEST 1 — aggregate_sum (tổng tất cả)
     expected_total = analytics.total_spending()
-    result = qa.ask("Tổng chi tiêu tất cả hóa đơn là bao nhiêu?")
-    print_case("TEST 1: aggregate_sum (toàn bộ)", "Tổng chi tiêu tất cả hóa đơn là bao nhiêu?", result)
-    assert result["success"] is True, "TEST 1 FAILED: success phải là True"
-    assert result["intent"] == "aggregate_sum", f"TEST 1 FAILED: intent sai ({result['intent']})"
+    result = qa.ask("What is the total spending across all invoices?")
+    print_case("TEST 1: aggregate_sum (all invoices)", "What is the total spending across all invoices?", result)
+    assert result["success"] is True, "TEST 1 FAILED: success must be True"
+    assert result["intent"] == "aggregate_sum", f"TEST 1 FAILED: incorrect intent ({result['intent']})"
     assert result["data"]["total"] == expected_total, (
-        f"TEST 1 FAILED: total lệch — hệ thống trả {result['data']['total']}, "
-        f"tính tay ra {expected_total}"
+        f"TEST 1 FAILED: total mismatch —  system returned {result['data']['total']}, "
+        f"expected {expected_total}"
     )
     print("[PASS] TEST 1")
  
 
     # TEST 2 — aggregate_sum theo công ty
     expected_company_total = analytics.total_spending(company=company_a)
-    result = qa.ask(f"Tổng chi tiêu của {company_a} là bao nhiêu?")
-    print_case("TEST 2: aggregate_sum (theo công ty)", f"Tổng chi tiêu của {company_a}...", result)
+    result = qa.ask(f"What is the total spending for {company_a}?")
+    print_case("TEST 2: aggregate_sum (by company)", f"What is the total spending for {company_a}?", result)
     assert result["success"] is True
     assert result["data"]["total"] == expected_company_total, (
-        f"TEST 2 FAILED: total theo công ty lệch — "
-        f"hệ thống {result['data']['total']}, tính tay {expected_company_total}"
+        f"TEST 2 FAILED: company total mismatch — "
+        f"system returned {result['data']['total']}, "
+        f"expected {expected_company_total}"
     )
     print("[PASS] TEST 2")
  
@@ -69,46 +70,47 @@ def main():
 
     # TEST 3 — aggregate_count
     expected_count = analytics.count_invoices()
-    result = qa.ask("Có bao nhiêu hóa đơn trong hệ thống?")
-    print_case("TEST 3: aggregate_count", "Có bao nhiêu hóa đơn trong hệ thống?", result)
+    result = qa.ask("How many invoices are in the system?")
+    print_case("TEST 3: aggregate_count", "How many invoices are in the system?", result)
     assert result["intent"] == "aggregate_count"
     assert result["data"]["count"] == expected_count, (
-        f"TEST 3 FAILED: count lệch — hệ thống {result['data']['count']}, "
-        f"tính tay {expected_count}"
+        f"TEST 3 FAILED: count mismatch — "
+        f"system returned {result['data']['count']}, "
+        f"expected {expected_count}"
     )
     print("[PASS] TEST 3")
  
 
     # TEST 4 — aggregate_top
     expected_top = analytics.top_companies(n=5)
-    result = qa.ask("Công ty nào có tổng chi tiêu cao nhất?")
-    print_case("TEST 4: aggregate_top", "Công ty nào có tổng chi tiêu cao nhất?", result)
+    result = qa.ask("Which company has the highest total spending?")
+    print_case("TEST 4: aggregate_top", "Which company has the highest total spending?", result)
     assert result["intent"] == "aggregate_top"
-    assert result["data"]["ranking"] == expected_top, "TEST 4 FAILED: ranking lệch"
+    assert result["data"]["ranking"] == expected_top, "TEST 4 FAILED: ranking mismatch"
     print("[PASS] TEST 4")
  
 
 
     # TEST 5 — aggregate_compare
-    result = qa.ask(f"So sánh chi tiêu giữa {company_a} và {company_b}")
-    print_case("TEST 5: aggregate_compare", f"So sánh {company_a} và {company_b}", result)
+    result = qa.ask(f"Compare spending between {company_a} and {company_b}")
+    print_case("TEST 5: aggregate_compare", f"Compare spending between {company_a} and {company_b}", result)
     assert result["intent"] == "aggregate_compare"
-    print("[PASS] TEST 5 (kiểm tra bằng mắt phần answer ở trên)")
+    print("[PASS] TEST 5 (please review the answer above)")
 
  
     # TEST 6 — Regression
-    result = qa.ask(f"Hóa đơn của {company_a} có tổng tiền bao nhiêu?")
-    print_case("TEST 6: regression (single-invoice, KHÔNG được là aggregate)",
-               f"Hóa đơn của {company_a} có tổng tiền bao nhiêu?", result)
+    result = qa.ask(f"What is the total amount of the {company_a} invoice?")
+    print_case("TEST 6: regression (single-invoice, not aggregate)",
+               f"What is the total amount of the {company_a} invoice?", result)
     assert result["intent"] == "total", (
-        f"TEST 6 FAILED: câu hỏi 1 hóa đơn cụ thể bị nhận nhầm thành "
-        f"'{result['intent']}' thay vì 'total'"
+        f"TEST 6 FAILED: a specific invoice question was incorrectly "
+        f"'{result['intent']}' instead of 'total'"
     )
     print("[PASS] TEST 6")
  
     print()
     print("=" * 80)
-    print("TẤT CẢ TEST TÍCH HỢP ĐÃ PASS")
+    print("ALL INTEGRATION TESTS PASSED")
     print("=" * 80)
  
  

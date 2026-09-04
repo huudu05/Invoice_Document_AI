@@ -22,7 +22,7 @@ DEFAULT_INFERENCE_DIR = "outputs/inference"
 st.set_page_config(page_title="Invoice Document AI", layout="wide")
  
  
-@st.cache_resource(show_spinner="Đang tải mô hình OCR + LayoutLMv3...")
+@st.cache_resource(show_spinner="Loading OCR + LayoutLMv3 models...")
 def load_extraction_pipeline(model_dir: str):
     return {
         "input_manager": InputManager(),
@@ -64,7 +64,7 @@ def extract_and_index(
  
     ocr_result = pipeline["ocr"].recognize(pages)
     if not ocr_result.pages:
-        raise ValueError("Không phát hiện được văn bản trên hóa đơn này.")
+        raise ValueError("No text was detected on this invoice.")
  
     base_name = Path(uploaded_file.name).stem
     is_multi_page = len(ocr_result.pages) > 1
@@ -115,25 +115,25 @@ def extract_and_index(
         })
  
     if not results:
-        raise ValueError("Không phát hiện được văn bản trên bất kỳ trang nào.")
+        raise ValueError("No text was detected on any invoice page.")
  
     return results
  
  
-st.sidebar.title("⚙️ Cấu hình")
+st.sidebar.title("⚙️ Configuration")
 model_dir = st.sidebar.text_input("Model LayoutLMv3", value=DEFAULT_MODEL_DIR)
-chroma_dir = st.sidebar.text_input("Thư mục ChromaDB", value=DEFAULT_CHROMA_DIR)
-inference_dir = st.sidebar.text_input("Thư mục lưu JSON inference", value=DEFAULT_INFERENCE_DIR)
+chroma_dir = st.sidebar.text_input("ChromaDB directory", value=DEFAULT_CHROMA_DIR)
+inference_dir = st.sidebar.text_input("Inference JSON output directory", value=DEFAULT_INFERENCE_DIR)
  
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     "**Invoice Document AI**\n\n"
-    "Trích xuất & tra cứu / phân tích hóa đơn "
-    "bằng LayoutLMv3 + RAG + LLM."
+    "Invoice extraction, search, and analytics "
+    "using LayoutLMv3 + RAG + LLM."
 )
  
 st.title("📄 Invoice Document AI")
-st.caption("Upload hóa đơn → trích xuất tự động → hỏi đáp & phân tích")
+st.caption("Upload invoice → automatic extraction → question answering & analysis")
  
 if "indexed_invoices" not in st.session_state:
     st.session_state.indexed_invoices = []
@@ -142,19 +142,19 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
  
  
-st.header("1. Tải hóa đơn lên")
+st.header("1. Upload invoices")
  
 uploaded_files = st.file_uploader(
-    "Chọn ảnh hoặc PDF hóa đơn (PDF nhiều trang = nhiều hóa đơn, "
-    "mỗi trang được xử lý riêng)",
+    "Select invoice images or PDF files "
+    "(multi-page PDFs are processed as separate invoices)",
     type=["png", "jpg", "jpeg", "pdf"],
     accept_multiple_files=True,
 )
  
-if uploaded_files and st.button("🔍 Trích xuất & Lưu vào hệ thống", type="primary"):
+if uploaded_files and st.button("🔍 Extract and Save", type="primary"):
     pipeline = load_extraction_pipeline(model_dir)
  
-    progress = st.progress(0, text="Đang xử lý...")
+    progress = st.progress(0, text="Processing...")
  
     for index, uploaded_file in enumerate(uploaded_files):
         try:
@@ -163,11 +163,11 @@ if uploaded_files and st.button("🔍 Trích xuất & Lưu vào hệ thống", t
             )
             st.session_state.indexed_invoices.extend(page_results)
             st.success(
-                f"✅ Đã trích xuất & lưu {len(page_results)} hóa đơn "
-                f"từ: {uploaded_file.name}"
+                f"✅ Extracted and saved {len(page_results)} invoices "
+                f"from: {uploaded_file.name}"
             )
         except Exception as error:
-            st.error(f"❌ Lỗi khi xử lý {uploaded_file.name}: {error}")
+            st.error(f"❌ Error processing {uploaded_file.name}: {error}")
  
         progress.progress((index + 1) / len(uploaded_files))
  
@@ -177,20 +177,20 @@ if uploaded_files and st.button("🔍 Trích xuất & Lưu vào hệ thống", t
  
  
 if st.session_state.indexed_invoices:
-    st.header("2. Hóa đơn đã trích xuất trong phiên này")
+    st.header("2. Invoices extracted in this session")
  
     for item in reversed(st.session_state.indexed_invoices):
         with st.expander(f"📄 {item['invoice_id']}"):
             col_image, col_data = st.columns([1, 1])
  
             with col_image:
-                st.image(item["image"], caption="Ảnh OCR (box + id)", use_container_width=True)
+                st.image(item["image"], caption="OCR Image (boxes + IDs)", use_container_width=True)
  
             with col_data:
-                st.markdown("**Thông tin chuẩn hóa:**")
+                st.markdown("**Normalized Information:**")
                 st.table({
-                    "Trường": ["Công ty", "Ngày", "Địa chỉ", "Tổng tiền"],
-                    "Giá trị": [
+                    "Field": ["Company", "Date", "Address", "Total"],
+                    "Value": [
                         item["normalized"].get("company", ""),
                         item["normalized"].get("date", ""),
                         item["normalized"].get("address", ""),
@@ -199,27 +199,27 @@ if st.session_state.indexed_invoices:
                 })
  
  
-st.header("3. Hỏi đáp & Phân tích")
+st.header("3. Questions and Analytics")
  
 st.caption(
-    "Ví dụ: 'Hóa đơn của X có tổng tiền bao nhiêu?', "
-    "'Tổng chi tiêu tất cả hóa đơn là bao nhiêu?', "
-    "'Công ty nào chi nhiều nhất?', "
-    "'So sánh chi tiêu giữa A và B'."
+    "Examples: 'What is the total amount of the invoice from X?', "
+    "'What is the total spending across all invoices?', "
+    "'Which company has the highest spending?', "
+    "'Compare spending between A and B'."
 )
  
-question = st.text_input("Nhập câu hỏi", key="question_input")
+question = st.text_input("Enter your question", key="question_input")
  
-if st.button("💬 Hỏi") and question.strip():
+if st.button("💬 Ask") and question.strip():
     qa, error = get_qa_engine(chroma_dir)
  
     if qa is None:
         st.warning(
-            "Chưa có hóa đơn nào trong hệ thống. "
-            "Vui lòng upload ít nhất 1 hóa đơn ở Mục 1 trước khi hỏi."
+            "There are no invoices in the system. "
+            "Please upload at least one invoice in Section 1 before asking a question."
         )
     else:
-        with st.spinner("Đang tìm câu trả lời..."):
+        with st.spinner("Finding an answer..."):
             result = qa.ask(question)
  
         st.session_state.chat_history.append((question, result))
@@ -227,26 +227,26 @@ if st.button("💬 Hỏi") and question.strip():
 if st.session_state.chat_history:
     st.markdown("---")
     for query, result in reversed(st.session_state.chat_history):
-        st.markdown(f"**🙋 Câu hỏi:** {query}")
+        st.markdown(f"**🙋 Question:** {query}")
  
         if result.get("success"):
             st.success(result.get("answer", ""))
         else:
             st.info(result.get("answer", ""))
  
-        with st.expander("Chi tiết"):
+        with st.expander("Details"):
             st.write(f"Intent: `{result.get('intent')}`")
-            st.write(f"Nguồn câu trả lời: `{result.get('answer_source', '')}`")
+            st.write(f"Answer Source: `{result.get('answer_source', '')}`")
  
             source = result.get("source")
             if source:
                 metadata = source.get("metadata", {})
-                st.write(f"Hóa đơn nguồn: **{metadata.get('company', '')}**")
+                st.write(f"Source Invoice: **{metadata.get('company', '')}**")
                 st.json(metadata)
  
             data = result.get("data")
             if data:
-                st.write("Dữ liệu tính toán (analytics):")
+                st.write("Computed Data (analytics):")
                 st.json(data)
  
         st.markdown("---")

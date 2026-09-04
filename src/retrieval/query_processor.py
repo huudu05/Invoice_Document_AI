@@ -1,4 +1,5 @@
 import re
+import calendar
 from dataclasses import dataclass, field
 from typing import Optional, List, Tuple
  
@@ -23,77 +24,81 @@ class QueryInfo:
 class QueryProcessor:
  
     TOTAL_KEYWORDS = [
-        "tổng tiền",
-        "tổng cộng",
         "total",
         "amount",
-        "bao nhiêu tiền",
-        "giá bao nhiêu",
+        "how much",
+        "cost",
+        "price",
+        "sum",
     ]
  
     DATE_KEYWORDS = [
-        "ngày",
-        "ngày hóa đơn",
-        "ngày lập",
         "date",
+        "invoice date",
         "when",
-        "khi nào",
+        "what day",
     ]
  
     ADDRESS_KEYWORDS = [
-        "địa chỉ",
         "address",
-        "ở đâu",
-        "địa điểm",
+        "located",
+        "location",
+        "where",
     ]
  
     COMPANY_KEYWORDS = [
-        "công ty",
         "company",
-        "doanh nghiệp",
-        "tên công ty",
+        "business",
+        "vendor",
+        "seller",
+        "name of the company",
     ]
-
  
     AGGREGATE_SUM_KEYWORDS = [
-        "tổng chi",
-        "tổng chi tiêu",
-        "tổng tất cả",
-        "tổng cộng tất cả",
-        "tổng tiền tất cả",
-        "chi tiêu tổng",
+        "total spending",
+        "total expenses",
+        "total of all",
+        "sum of all",
+        "overall spending",
+        "all invoices total",
     ]
  
     AGGREGATE_COUNT_KEYWORDS = [
-        "có bao nhiêu hóa đơn",
-        "số lượng hóa đơn",
-        "bao nhiêu hóa đơn",
-        "đếm hóa đơn",
+        "how many invoices",
+        "number of invoices",
+        "count invoices",
+        "count the invoices",
     ]
  
     AGGREGATE_TOP_KEYWORDS = [
-        "cao nhất",
-        "nhiều nhất",
-        "lớn nhất",
-        "thấp nhất",
-        "ít nhất",
+        "highest",
+        "most",
+        "largest",
+        "lowest",
+        "least",
         "top",
     ]
  
     AGGREGATE_TREND_KEYWORDS = [
-        "theo tháng",
-        "từng tháng",
-        "xu hướng",
-        "biến động",
-        "theo thời gian",
+        "by month",
+        "each month",
+        "trend",
+        "over time",
+        "monthly",
     ]
  
     AGGREGATE_COMPARE_KEYWORDS = [
-        "so sánh",
         "compare",
         "vs",
-        "so với",
+        "versus",
+        "compared to",
     ]
+ 
+    MONTH_NAMES = {
+        "january": 1, "february": 2, "march": 3, "april": 4,
+        "may": 5, "june": 6, "july": 7, "august": 8,
+        "september": 9, "october": 10, "november": 11, "december": 12,
+    }
  
 
     def process(self, query: str) -> QueryInfo:
@@ -190,28 +195,43 @@ class QueryProcessor:
  
     def _extract_date_range(self, query: str) -> Tuple[Optional[str], Optional[str]]:
  
-        match = re.search(r"quý\s+([1-4])\s+năm\s+(\d{4})", query)
+        match = re.search(r"q(?:uarter)?\s*([1-4])\s+(\d{4})", query)
         if match:
             quarter = int(match.group(1))
             year = int(match.group(2))
             start_month = (quarter - 1) * 3 + 1
             end_month = start_month + 2
+            end_day = calendar.monthrange(year, end_month)[1]
             return (
                 f"{year:04d}-{start_month:02d}-01",
-                f"{year:04d}-{end_month:02d}-31",
+                f"{year:04d}-{end_month:02d}-{end_day:02d}",
             )
         
-        match = re.search(r"tháng\s+(\d{1,2})\s+năm\s+(\d{4})", query)
+        month_pattern = "|".join(self.MONTH_NAMES.keys())
+        match = re.search(rf"({month_pattern})\s+(\d{{4}})", query)
+        if match:
+            month = self.MONTH_NAMES[match.group(1)]
+            year = int(match.group(2))
+            end_day = calendar.monthrange(year, month)[1]
+            return (
+                f"{year:04d}-{month:02d}-01",
+                f"{year:04d}-{month:02d}-{end_day:02d}",
+            )
+ 
+        # "3/2020" (month/year)
+        match = re.search(r"\b(\d{1,2})/(\d{4})\b", query)
         if match:
             month = int(match.group(1))
             year = int(match.group(2))
             if 1 <= month <= 12:
+                end_day = calendar.monthrange(year, month)[1]
                 return (
                     f"{year:04d}-{month:02d}-01",
-                    f"{year:04d}-{month:02d}-31",
+                    f"{year:04d}-{month:02d}-{end_day:02d}",
                 )
  
-        match = re.search(r"năm\s+(\d{4})", query)
+        # "2020" / "in 2020"
+        match = re.search(r"\b(\d{4})\b", query)
         if match:
             year = int(match.group(1))
             return (f"{year:04d}-01-01", f"{year:04d}-12-31")
@@ -225,12 +245,10 @@ class QueryProcessor:
     ) -> Optional[str]:
  
         patterns = [
-            r"của\s+(.+?)(?:\s+có|\s+là|\s+ngày|\s+bao nhiêu|\?|$)",
-            r"công ty\s+(.+?)(?:\s+có|\s+là|\s+ngày|\s+bao nhiêu|\?|$)",
-            r"doanh nghiệp\s+(.+?)(?:\s+có|\s+là|\s+ngày|\s+bao nhiêu|\?|$)",
-            r"hóa đơn\s+(?:của\s+)?(.+?)(?:\s+có|\s+là|\s+ngày|\s+bao nhiêu|\?|$)",
-            # NEW: aggregate phrasing like "hóa đơn từ HOME MASTER"
-            r"từ\s+(.+?)(?:\s+có|\s+là|\s+trong|\?|$)",
+            r"invoice\s+(?:for|from)\s+(.+?)(?:\s+has|\s+is|\s+on|\?|$)",
+            r"(?:for|from)\s+(.+?)(?:\s+has|\s+is|\s+on|\?|$)",
+            r"company\s+(.+?)(?:\s+has|\s+is|\?|$)",
+            r"of\s+(?:the\s+)?(.+?)(?:\s+has|\s+is|\?|$)",
         ]
  
         for pattern in patterns:
@@ -246,14 +264,13 @@ class QueryProcessor:
         return None
 
     _COMPANY_STOPWORDS = {
-        "nào", "gì", "ai", "đâu", "nao", "gi", "dau",
-        "là", "la", "có", "co", "của", "cua",
-        "và", "va", "hay", "hoặc", "hoac",
+        "it", "this", "that", "what", "which", "who",
+        "there", "here", "invoice", "invoice's",
     }
  
     _LEADING_STOPWORDS = {
-        "trong", "tại", "cho", "với", "về", "theo",
-        "từ", "đến", "sau", "trước", "và", "hay", "hoặc",
+        "in", "on", "at", "for", "with", "about",
+        "the", "a", "an", "and", "or", "to",
     }
  
     def _is_valid_company(self, company: str) -> bool:
@@ -261,7 +278,7 @@ class QueryProcessor:
         if company.lower() in self._COMPANY_STOPWORDS:
             return False
  
-        if re.fullmatch(r"năm\s*\d{0,4}", company, flags=re.IGNORECASE):
+        if re.fullmatch(r"year\s*\d{0,4}", company, flags=re.IGNORECASE):
             return False
  
         if re.fullmatch(r"\d+", company):
@@ -285,9 +302,9 @@ class QueryProcessor:
         normalized_query = self._normalize_text(query)
  
         pattern = (
-            r"so sánh\s+(?:chi tiêu\s+(?:của\s+)?)?(?:giữa\s+)?"
-            r"(.+?)\s+(?:và|vs|với)\s+(.+?)"
-            r"(?:\s+trong|\s+từ|\?|$)"
+            r"compare\s+(?:spending\s+(?:of|for)\s+)?(?:between\s+)?"
+            r"(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)"
+            r"(?:\s+in|\s+from|\?|$)"
         )
  
         match = re.search(pattern, normalized_query, flags=re.IGNORECASE)
@@ -306,21 +323,21 @@ class QueryProcessor:
         company = company.strip()
  
         company = re.sub(
-            r"^(hóa đơn|hoa don)\s+",
+            r"^(the\s+invoice\s+(?:of|from)|invoice\s+(?:of|from)|the\s+invoice|invoice)\s+",
             "",
             company,
             flags=re.IGNORECASE,
         )
  
         company = re.sub(
-            r"^từ\s+",
+            r"^the\s+",
             "",
             company,
             flags=re.IGNORECASE,
         )
  
         company = re.sub(
-            r"\s+(là|la|có|co|ngày|bao nhiêu)$",
+            r"\s+(is|has|on|was|were|does|do)$",
             "",
             company,
             flags=re.IGNORECASE,
@@ -370,13 +387,13 @@ if __name__ == "__main__":
     processor = QueryProcessor()
  
     test_queries = [
-        "Hóa đơn của HOME MASTER HARDWARE có tổng tiền bao nhiêu?",
-        "Ngày của hóa đơn HOME MASTER là ngày nào?",
-        "Tổng chi tiêu trong tháng 12 năm 2017 là bao nhiêu?",
-        "Có bao nhiêu hóa đơn từ HOME MASTER?",
-        "Công ty nào có tổng chi cao nhất?",
-        "So sánh chi tiêu giữa HOME MASTER và LIGHTROOM",
-        "Chi tiêu theo tháng của năm 2017",
+        "What is the total amount of the invoice from HOME MASTER HARDWARE?",
+        "What is the date of the invoice from HOME MASTER?",
+        "What was the total spending in December 2017?",
+        "How many invoices are there from HOME MASTER?",
+        "Which company has the highest total spending?",
+        "Compare spending between HOME MASTER and LIGHTROOM",
+        "Show monthly spending for 2017",
     ]
  
     print()

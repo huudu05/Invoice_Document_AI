@@ -2,19 +2,13 @@ from src.pipeline.invoice_qa import InvoiceQA
 
 TEST_QUERIES = [
 
-    "Hóa đơn của HOME MASTER HARDWARE có tổng tiền bao nhiêu?",
-
-    "Ngày của hóa đơn HOME MASTER là ngày nào?",
-
-    "Địa chỉ của HOME MASTER HARDWARE là gì?",
-
-    "Địa chỉ của LIGHTROOM GALLERY là gì?",
-
-    "Tổng tiền hóa đơn LIGHTROOM là bao nhiêu?",
-
-    "Ngày của hóa đơn LIGHTROOM là ngày nào?",
-
-    "Tổng tiền hóa đơn APPLE là bao nhiêu?",
+    "What is the total amount of the HOME MASTER HARDWARE invoice?",
+    "What is the date of the HOME MASTER invoice?",
+    "What is the address of HOME MASTER HARDWARE?",
+    "What is the address of LIGHTROOM GALLERY?",
+    "What is the total amount of the LIGHTROOM invoice?",
+    "What is the date of the LIGHTROOM invoice?",
+    "What is the total amount of the APPLE invoice?",
 ]
 
 def main():
@@ -69,43 +63,22 @@ def main():
         )
 
         if source:
-            metadata = source.get(
-                "metadata",
-                {},
-            )
+            metadata = source.get("metadata", {})
+
             print()
             print("SOURCE INVOICE")
             print("-" * 90)
-            print(
-                f"ID      : "
-                f"{source.get('id', '')}"
-            )
-            print(
-                f"Score   : "
-                f"{source.get('final_score', 0.0):.4f}"
-            )
-            print(
-                f"Company : "
-                f"{metadata.get('company', '')}"
-            )
-            print(
-                f"Date    : "
-                f"{metadata.get('date', '')}"
-            )
-            print(
-                f"Address : "
-                f"{metadata.get('address', '')}"
-            )
-            print(
-                f"Total   : "
-                f"{metadata.get('total', '')}"
-            )
+            print(f"ID      : {source.get('id', '')}")
+            print(f"Score   : {source.get('final_score', 0.0):.4f}")
+            print(f"Company : {metadata.get('company', '')}")
+            print(f"Date    : {metadata.get('date', '')}")
+            print(f"Address : {metadata.get('address', '')}")
+            print(f"Total   : {metadata.get('total', '')}")
         else:
             print()
             print("SOURCE INVOICE")
             print("-" * 90)
             print("No valid source.")
-
     print()
     print("=" * 90)
     print("TEST COMPLETED")

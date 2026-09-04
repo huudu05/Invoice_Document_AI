@@ -14,18 +14,10 @@ from src.generation.llm_generator import (
 from src.analytics.invoice_analytics import InvoiceAnalytics
 
 
-# ============================================================
-# CONFIGURATION
-# ============================================================
-
 DEFAULT_TOP_K = 5
 
 MIN_RELEVANCE_SCORE = 0.80
 
-
-# ============================================================
-# INVOICE QA
-# ============================================================
 
 class InvoiceQA:
 
@@ -66,25 +58,13 @@ class InvoiceQA:
 
         self.use_llm = use_llm
 
-        # ----------------------------------------------------
-        # Retrieval
-        # ----------------------------------------------------
-
         self.retriever = (
             InvoiceRetriever()
         )
 
-        # ----------------------------------------------------
-        # Context
-        # ----------------------------------------------------
-
         self.context_builder = (
             InvoiceContextBuilder()
         )
-
-        # ----------------------------------------------------
-        # LLM
-        # ----------------------------------------------------
 
         self.llm = (
             LLMGenerator()
@@ -96,53 +76,31 @@ class InvoiceQA:
             store=self.retriever.store
         )
 
-    # ========================================================
-    # ASK
-    # ========================================================
 
     def ask(
         self,
         query: str,
     ) -> Dict[str, Any]:
 
-        # ----------------------------------------------------
-        # Validate query
-        # ----------------------------------------------------
-
         if not query or not query.strip():
 
             return self._failure(
                 query=query,
                 answer=(
-                    "Vui lòng nhập câu hỏi."
+                    "Please enter a question."
                 ),
             )
 
         query = query.strip()
-
-        # ----------------------------------------------------
-        # Query analysis
-        # ----------------------------------------------------
 
         query_info = (
             self.retriever.query_processor.process(
                 query
             )
         )
-        # ----------------------------------------------------
-        # NEW: Aggregate queries (phân tích tổng hợp)
-        #
-        # Các intent này không tra 1 hóa đơn cụ thể, nên tách khỏi
-        # luồng retrieval/relevance-gate/field-validation bên dưới
-        # (vốn được thiết kế cho single-invoice lookup).
-        # ----------------------------------------------------
 
         if query_info.intent.startswith("aggregate_"):
             return self._handle_aggregate_query(query, query_info)
-
-        # ----------------------------------------------------
-        # Retrieval
-        # ----------------------------------------------------
 
         results = (
             self.retriever.search(
@@ -150,10 +108,6 @@ class InvoiceQA:
                 top_k=self.top_k,
             )
         )
-
-        # ----------------------------------------------------
-        # Relevance Gate
-        # ----------------------------------------------------
 
         source = (
             self._select_relevant_result(
@@ -167,8 +121,7 @@ class InvoiceQA:
             return {
                 "success": False,
                 "answer": (
-                    "Không tìm thấy hóa đơn "
-                    "phù hợp với câu hỏi."
+                    "No invoice matching the question was found."
                 ),
                 "query": query,
                 "intent": query_info.intent,
@@ -176,10 +129,6 @@ class InvoiceQA:
                 "results": results,
                 "source": None,
             }
-
-        # ----------------------------------------------------
-        # Validate requested field
-        # ----------------------------------------------------
 
         field_error = (
             self._validate_requested_field(
@@ -200,18 +149,6 @@ class InvoiceQA:
                 "source": source,
             }
 
-        # ----------------------------------------------------
-        # Direct answer
-        #
-        # For simple structured fields:
-        #
-        # total
-        # date
-        # address
-        # company
-        #
-        # We can answer directly.
-        # ----------------------------------------------------
 
         direct_answer = (
             self._build_direct_answer(
@@ -233,9 +170,6 @@ class InvoiceQA:
                 "answer_source": "structured_data",
             }
 
-        # ----------------------------------------------------
-        # Build context
-        # ----------------------------------------------------
 
         context = (
             self.context_builder.build_best_context(
@@ -246,17 +180,13 @@ class InvoiceQA:
             )
         )
 
-        # ----------------------------------------------------
-        # If LLM disabled
-        # ----------------------------------------------------
 
         if not self.use_llm:
 
             return {
                 "success": True,
                 "answer": (
-                    "Đã tìm thấy thông tin "
-                    "hóa đơn phù hợp."
+                    "Relevant invoice information was found."
                 ),
                 "query": query,
                 "intent": query_info.intent,
@@ -267,9 +197,6 @@ class InvoiceQA:
                 "answer_source": "retrieval",
             }
 
-        # ----------------------------------------------------
-        # Build prompt
-        # ----------------------------------------------------
 
         prompt = (
             self._build_prompt(
@@ -278,9 +205,6 @@ class InvoiceQA:
             )
         )
 
-        # ----------------------------------------------------
-        # Generate answer
-        # ----------------------------------------------------
 
         try:
 
@@ -293,8 +217,7 @@ class InvoiceQA:
             return {
                 "success": False,
                 "answer": (
-                    "Không thể tạo câu trả lời "
-                    "từ mô hình ngôn ngữ."
+                    "Unable to generate an answer from the language model."
                 ),
                 "error": str(error),
                 "query": query,
@@ -304,17 +227,12 @@ class InvoiceQA:
                 "source": source,
             }
 
-        # ----------------------------------------------------
-        # Empty answer
-        # ----------------------------------------------------
-
         if not answer:
 
             return {
                 "success": False,
                 "answer": (
-                    "Không thể tạo câu trả lời "
-                    "phù hợp."
+                    "Unable to generate a suitable answer."
                 ),
                 "query": query,
                 "intent": query_info.intent,
@@ -322,10 +240,6 @@ class InvoiceQA:
                 "results": results,
                 "source": source,
             }
-
-        # ----------------------------------------------------
-        # Success
-        # ----------------------------------------------------
 
         return {
             "success": True,
@@ -339,10 +253,6 @@ class InvoiceQA:
             "answer_source": "llm",
         }
 
-        # ========================================================
-    # AGGREGATE QUERY (phân tích tổng hợp)
-    # ========================================================
-
     def _handle_aggregate_query(
         self,
         query: str,
@@ -351,33 +261,25 @@ class InvoiceQA:
 
         intent = query_info.intent
 
-        # ----------------------------------------------------
-        # Guard: no invoice indexed at all
-        # ----------------------------------------------------
-
         if not self.analytics.invoices:
             return {
                 "success": False,
-                "answer": "Chưa có hóa đơn nào trong hệ thống để phân tích.",
+                "answer": "There are no invoices available for analysis.",
                 "query": query,
                 "intent": intent,
                 "company": query_info.company,
                 "source": None,
             }
 
-        # ----------------------------------------------------
-        # Compute the exact numbers first (pure code, no LLM).
-        # This is the single source of truth for the answer.
-        # ----------------------------------------------------
 
+        # Compute the exact numbers first
         if intent == "aggregate_compare":
 
             if not query_info.company or not query_info.company_b:
                 return {
                     "success": False,
                     "answer": (
-                        "Vui lòng nêu rõ 2 công ty cần so sánh, "
-                        "ví dụ: 'So sánh chi tiêu giữa A và B'."
+                        "Please specify the two companies to compare, for example: 'Compare spending between A and B'."
                     ),
                     "query": query,
                     "intent": intent,
@@ -389,15 +291,15 @@ class InvoiceQA:
                 query_info.company, query_info.company_b
             )
             summary = (
-                f"So sánh chi tiêu:\n"
+                f"Spending comparison:\n"
                 f"- {data['company_a']['name']}: "
-                f"tổng {data['company_a']['total']}, "
-                f"{data['company_a']['count']} hóa đơn, "
-                f"trung bình {data['company_a']['average']}\n"
+                f"total {data['company_a']['total']}, "
+                f"{data['company_a']['count']} invoices, "
+                f"average {data['company_a']['average']}\n"
                 f"- {data['company_b']['name']}: "
-                f"tổng {data['company_b']['total']}, "
-                f"{data['company_b']['count']} hóa đơn, "
-                f"trung bình {data['company_b']['average']}"
+                f"total {data['company_b']['total']}, "
+                f"{data['company_b']['count']} invoices, "
+                f"average {data['company_b']['average']}"
             )
             structured_data = data
 
@@ -405,9 +307,9 @@ class InvoiceQA:
 
             top = self.analytics.top_companies(n=5)
             if not top:
-                summary = "Không có dữ liệu chi tiêu theo công ty."
+                summary = "No spending data available by company."
             else:
-                lines = ["Xếp hạng chi tiêu theo công ty:"]
+                lines = ["Spending ranking by company:"]
                 for rank, (company, amount) in enumerate(top, start=1):
                     lines.append(f"{rank}. {company}: {amount}")
                 summary = "\n".join(lines)
@@ -417,9 +319,9 @@ class InvoiceQA:
 
             trend = self.analytics.spending_by_month(company=query_info.company)
             if not trend:
-                summary = "Không có dữ liệu để thống kê theo tháng."
+                summary = "No monthly spending data available."
             else:
-                lines = ["Chi tiêu theo tháng:"]
+                lines = ["Monthly spending:"]
                 for month, amount in trend.items():
                     lines.append(f"{month}: {amount}")
                 summary = "\n".join(lines)
@@ -439,7 +341,7 @@ class InvoiceQA:
             )
             structured_data = {"count": count}
 
-        else:  # aggregate_sum (default)
+        else:  # aggregate_sum
 
             summary = self.analytics.summary_text(
                 company=query_info.company,
@@ -454,9 +356,7 @@ class InvoiceQA:
                 )
             }
 
-        # ----------------------------------------------------
         # If LLM disabled: return the raw summary directly.
-        # ----------------------------------------------------
 
         if not self.use_llm:
             return {
@@ -469,32 +369,25 @@ class InvoiceQA:
                 "answer_source": "analytics",
             }
 
-        # ----------------------------------------------------
-        # Let the LLM phrase the already-computed numbers as a
-        # natural sentence. It must NOT recompute anything.
-        # ----------------------------------------------------
-
         prompt = f"""
-Bạn là trợ lý AI trả lời câu hỏi phân tích chi tiêu hóa đơn.
+You are an AI assistant answering invoice spending analysis questions.
 
-Dưới đây là kết quả đã được HỆ THỐNG TÍNH TOÁN CHÍNH XÁC sẵn.
-CHỈ diễn đạt lại các con số này thành câu trả lời tự nhiên,
-KHÔNG được tự tính toán lại, KHÔNG bịa thêm số liệu nào khác.
+The following results have already been calculated accurately by the system.
+Only express these numbers naturally in your answer.
+Do not recalculate anything or invent additional figures.
 
-DỮ LIỆU:
+DATA:
 {summary}
 
-CÂU HỎI:
+QUESTION:
 {query}
 
-CÂU TRẢ LỜI:
+ANSWER:
 """.strip()
 
         try:
             answer = self.llm.generate(prompt)
         except Exception as error:
-            # Fallback: LLM lỗi vẫn trả lời được bằng summary thô,
-            # vì con số đã có sẵn, không phụ thuộc LLM để đúng.
             return {
                 "success": True,
                 "answer": summary,
@@ -519,9 +412,6 @@ CÂU TRẢ LỜI:
             "answer_source": "analytics_llm",
         }
 
-    # ========================================================
-    # SELECT RELEVANT RESULT
-    # ========================================================
 
     def _select_relevant_result(
         self,
@@ -534,15 +424,9 @@ CÂU TRẢ LỜI:
     ]:
 
         if not results:
-
             return None
 
-        # ----------------------------------------------------
-        # Results are already reranked.
-        # ----------------------------------------------------
-
         for result in results:
-
             final_score = float(
                 result.get(
                     "final_score",
@@ -550,24 +434,11 @@ CÂU TRẢ LỜI:
                 )
             )
 
-            # ------------------------------------------------
             # Minimum relevance
-            # ------------------------------------------------
-
-            if (
-                final_score
-                < self.min_relevance_score
-            ):
-
+            if (final_score < self.min_relevance_score):
                 continue
 
-            # ------------------------------------------------
-            # If company specified,
-            # require company match.
-            # ------------------------------------------------
-
             if query_info.company:
-
                 company_score = float(
                     result.get(
                         "company_score",
@@ -576,16 +447,10 @@ CÂU TRẢ LỜI:
                 )
 
                 if company_score <= 0:
-
                     continue
 
             return result
-
         return None
-
-    # ========================================================
-    # VALIDATE REQUESTED FIELD
-    # ========================================================
 
     def _validate_requested_field(
         self,
@@ -603,7 +468,7 @@ CÂU TRẢ LỜI:
         company = (
             metadata.get(
                 "company",
-                "hóa đơn này",
+                "this invoice",
             )
         )
 
@@ -611,12 +476,7 @@ CÂU TRẢ LỜI:
             query_info.intent
         )
 
-        # ----------------------------------------------------
-        # Total
-        # ----------------------------------------------------
-
         if intent == "total":
-
             if not self._has_value(
                 metadata.get(
                     "total"
@@ -624,14 +484,8 @@ CÂU TRẢ LỜI:
             ):
 
                 return (
-                    f"Không tìm thấy tổng tiền "
-                    f"của hóa đơn {company} "
-                    f"trong dữ liệu."
+                    f"The total amount for invoice {company} was not found in the data."
                 )
-
-        # ----------------------------------------------------
-        # Date
-        # ----------------------------------------------------
 
         elif intent == "date":
 
@@ -640,16 +494,9 @@ CÂU TRẢ LỜI:
                     "date"
                 )
             ):
-
                 return (
-                    f"Không tìm thấy ngày "
-                    f"của hóa đơn {company} "
-                    f"trong dữ liệu."
+                    f"The date for invoice {company} was not found in the data."
                 )
-
-        # ----------------------------------------------------
-        # Address
-        # ----------------------------------------------------
 
         elif intent == "address":
 
@@ -660,14 +507,8 @@ CÂU TRẢ LỜI:
             ):
 
                 return (
-                    f"Không tìm thấy địa chỉ "
-                    f"của hóa đơn {company} "
-                    f"trong dữ liệu."
+                    f"The address for invoice {company} was not found in the data."
                 )
-
-        # ----------------------------------------------------
-        # Company
-        # ----------------------------------------------------
 
         elif intent == "company":
 
@@ -678,15 +519,10 @@ CÂU TRẢ LỜI:
             ):
 
                 return (
-                    "Không tìm thấy tên công ty "
-                    "trong dữ liệu hóa đơn."
+                    f"The company name for invoice {company} was not found in the data."
                 )
 
         return None
-
-    # ========================================================
-    # DIRECT ANSWER
-    # ========================================================
 
     def _build_direct_answer(
         self,
@@ -700,14 +536,9 @@ CÂU TRẢ LỜI:
                 {},
             )
         )
-
         intent = (
             query_info.intent
         )
-
-        # ----------------------------------------------------
-        # Total
-        # ----------------------------------------------------
 
         if intent == "total":
 
@@ -724,10 +555,6 @@ CÂU TRẢ LỜI:
                     total
                 ).strip()
 
-        # ----------------------------------------------------
-        # Date
-        # ----------------------------------------------------
-
         if intent == "date":
 
             date = metadata.get(
@@ -743,10 +570,6 @@ CÂU TRẢ LỜI:
                     date
                 ).strip()
 
-        # ----------------------------------------------------
-        # Address
-        # ----------------------------------------------------
-
         if intent == "address":
 
             address = metadata.get(
@@ -761,10 +584,6 @@ CÂU TRẢ LỜI:
                 return str(
                     address
                 ).strip()
-
-        # ----------------------------------------------------
-        # Company
-        # ----------------------------------------------------
 
         if intent == "company":
 
@@ -783,10 +602,6 @@ CÂU TRẢ LỜI:
 
         return None
 
-    # ========================================================
-    # BUILD PROMPT
-    # ========================================================
-
     def _build_prompt(
         self,
         query: str,
@@ -794,34 +609,28 @@ CÂU TRẢ LỜI:
     ) -> str:
 
         return f"""
-Bạn là trợ lý AI chuyên trả lời câu hỏi
-về hóa đơn doanh nghiệp.
+You are an AI assistant specialized in answering business invoice questions.
 
-CHỈ sử dụng thông tin có trong CONTEXT.
+Use only the information provided in the CONTEXT.
 
-QUY TẮC:
-
-1. Không được sử dụng kiến thức bên ngoài CONTEXT.
-2. Không được tự suy đoán hoặc bịa thông tin.
-3. Nếu CONTEXT không chứa thông tin cần thiết,
-   hãy nói rõ rằng không tìm thấy thông tin trong dữ liệu.
-4. Trả lời trực tiếp và ngắn gọn.
-5. Giữ nguyên số tiền, ngày tháng và địa chỉ.
-6. Không giải thích quá trình suy luận.
-7. Chỉ trả lời câu hỏi hiện tại.
+RULES:
+1. Do not use knowledge outside the CONTEXT.
+2. Do not make assumptions or invent information.
+3. If the CONTEXT does not contain the required information, clearly state that it was not found.
+4. Answer directly and concisely.
+5. Preserve amounts, dates, and addresses exactly as provided.
+6. Do not explain your reasoning.
+7. Answer only the current question.
 
 CONTEXT:
 {context}
 
-CÂU HỎI:
+QUESTION:
 {query}
 
-CÂU TRẢ LỜI:
+ANSWER:
 """.strip()
 
-    # ========================================================
-    # FAILURE
-    # ========================================================
 
     @staticmethod
     def _failure(
@@ -837,9 +646,6 @@ CÂU TRẢ LỜI:
             "source": None,
         }
 
-    # ========================================================
-    # HAS VALUE
-    # ========================================================
 
     @staticmethod
     def _has_value(
@@ -855,9 +661,6 @@ CÂU TRẢ LỜI:
         )
 
 
-# ============================================================
-# HELPER
-# ============================================================
 
 def ask_invoice(
     query: str,
@@ -870,27 +673,16 @@ def ask_invoice(
     )
 
 
-# ============================================================
-# TEST
-# ============================================================
-
 if __name__ == "__main__":
 
     test_queries = [
-
-        "Hóa đơn của HOME MASTER HARDWARE có tổng tiền bao nhiêu?",
-
-        "Ngày của hóa đơn HOME MASTER là ngày nào?",
-
-        "Địa chỉ của HOME MASTER HARDWARE là gì?",
-
-        "Địa chỉ của LIGHTROOM GALLERY là gì?",
-
-        "Tổng tiền hóa đơn LIGHTROOM là bao nhiêu?",
-
-        "Ngày của hóa đơn LIGHTROOM là ngày nào?",
-
-        "Tổng tiền hóa đơn APPLE là bao nhiêu?",
+        "What is the total amount of the HOME MASTER HARDWARE invoice?",
+        "What is the date of the HOME MASTER invoice?",
+        "What is the address of HOME MASTER HARDWARE?",
+        "What is the address of LIGHTROOM GALLERY?",
+        "What is the total amount of the LIGHTROOM invoice?",
+        "What is the date of the LIGHTROOM invoice?",
+        "What is the total amount of the APPLE invoice?",
     ]
 
     qa = InvoiceQA()
@@ -904,59 +696,40 @@ if __name__ == "__main__":
 
         print()
         print("=" * 100)
-
-        print(
-            f"QUERY:\n{query}"
-        )
-
+        print(f"QUERY:\n{query}")
         result = qa.ask(
             query
         )
 
         print()
-        print(
-            "QUERY ANALYSIS"
-        )
-
+        print("QUERY ANALYSIS")
         print(
             f"Intent  : "
             f"{result.get('intent', '')}"
         )
-
         print(
             f"Company : "
             f"{result.get('company', '')}"
         )
 
         print()
-        print(
-            "ANSWER"
-        )
-
+        print("ANSWER")
         print("-" * 80)
-
-        print(
-            result["answer"]
-        )
+        print(result["answer"])
 
         print()
         print(
             f"Success : "
             f"{result['success']}"
         )
-
         print(
             f"Answer Source : "
             f"{result.get('answer_source', '')}"
         )
 
         print()
-        print(
-            "SOURCE INVOICE"
-        )
-
+        print("SOURCE INVOICE")
         print("-" * 80)
-
         source = (
             result.get(
                 "source"
@@ -964,50 +737,38 @@ if __name__ == "__main__":
         )
 
         if source:
-
             metadata = (
                 source.get(
                     "metadata",
                     {},
                 )
             )
-
             print(
                 f"ID      : "
                 f"{source.get('id', '')}"
             )
-
             print(
                 f"Score   : "
                 f"{source.get('final_score', 0.0):.4f}"
             )
-
             print(
                 f"Company : "
                 f"{metadata.get('company', '')}"
             )
-
             print(
                 f"Date    : "
                 f"{metadata.get('date', '')}"
             )
-
             print(
                 f"Address : "
                 f"{metadata.get('address', '')}"
             )
-
             print(
                 f"Total   : "
                 f"{metadata.get('total', '')}"
             )
-
         else:
-
-            print(
-                "No valid source."
-            )
-
+            print("No valid source.")
     print()
     print("=" * 100)
     print("TEST COMPLETED")

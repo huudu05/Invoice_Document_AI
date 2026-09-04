@@ -7,10 +7,6 @@ def main():
     print("TEST DATA NORMALIZER")
     print("=" * 60)
 
-    # --------------------------------------------------------
-    # Raw result from LayoutLMv3
-    # --------------------------------------------------------
-
     entities = {
         "company":
             "HOME MASTER HARDWARE& ELECTRICAL",
@@ -36,19 +32,11 @@ def main():
             f"{key:<10}: {value}"
         )
 
-    # --------------------------------------------------------
-    # Normalize
-    # --------------------------------------------------------
-
     normalizer = DataNormalizer()
 
     normalized = normalizer.normalize(
         entities
     )
-
-    # --------------------------------------------------------
-    # Display
-    # --------------------------------------------------------
 
     print("\nNORMALIZED ENTITIES")
     print("-" * 60)

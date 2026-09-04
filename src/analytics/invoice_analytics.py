@@ -6,9 +6,11 @@ from src.knowledge_base.chroma_store import ChromaInvoiceStore
  
 class InvoiceAnalytics:
     """
-    Thao tác thuần trên list[dict] metadata (company/date/address/total).
-    `date` được lưu chuẩn hoá dạng "YYYY-MM-DD" (ISO) nên có thể so sánh
-    bằng string trực tiếp mà vẫn đúng thứ tự thời gian.
+    Performs analytics on invoice metadata dictionaries
+    (company/date/address/total).
+
+    The `date` field is normalized as "YYYY-MM-DD" (ISO),
+    so direct string comparison preserves chronological order.
     """
  
     def __init__(self, store: Optional[ChromaInvoiceStore] = None):
@@ -16,7 +18,7 @@ class InvoiceAnalytics:
         self.invoices: List[Dict[str, Any]] = self.store.get_all_invoices()
  
     def refresh(self) -> None:
-        """Gọi lại nếu có invoice mới được index sau khi khởi tạo."""
+        """Refresh the invoice list after new invoices are indexed."""
         self.invoices = self.store.get_all_invoices()
 
     def _filter(
@@ -108,7 +110,7 @@ class InvoiceAnalytics:
         totals: Dict[str, float] = defaultdict(float)
  
         for invoice in filtered:
-            company = str(invoice.get("company", "")).strip() or "(Không rõ)"
+            company = str(invoice.get("company", "")).strip() or "(Unknown)"
             totals[company] += self._to_float(invoice.get("total"))
  
         return {
@@ -170,14 +172,14 @@ class InvoiceAnalytics:
         count = self.count_invoices(company, date_from, date_to)
         average = self.average_amount(company, date_from, date_to)
  
-        lines = ["Kết quả tổng hợp (đã tính chính xác bằng hệ thống):"]
+        lines = ["Summary results (calculated accurately by the system):"]
         if company:
-            lines.append(f"- Công ty: {company}")
+            lines.append(f"- Company: {company}")
         if date_from or date_to:
-            lines.append(f"- Khoảng thời gian: {date_from or '...'} đến {date_to or '...'}")
-        lines.append(f"- Số hóa đơn: {count}")
-        lines.append(f"- Tổng chi tiêu: {total}")
-        lines.append(f"- Trung bình mỗi hóa đơn: {average}")
+            lines.append(f"- Date range: {date_from or '...'} to {date_to or '...'}")
+        lines.append(f"- Number of invoices: {count}")
+        lines.append(f"- Total spending: {total}")
+        lines.append(f"- Average per invoice: {average}")
  
         return "\n".join(lines)
  

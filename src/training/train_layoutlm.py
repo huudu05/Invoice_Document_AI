@@ -498,28 +498,19 @@ def load_checkpoint(
             "match the current dataset."
         )
 
-
     # Model
-
-
     trainer.model.load_state_dict(
         checkpoint["model_state_dict"]
     )
 
-
     # Optimizer
-
-
     trainer.optimizer.load_state_dict(
         checkpoint[
             "optimizer_state_dict"
         ]
     )
 
-
     # Scheduler
-
-
     if (
         trainer.scheduler is not None
         and checkpoint.get(
@@ -533,10 +524,7 @@ def load_checkpoint(
             ]
         )
 
-
     # RNG
-
-
     restore_rng_state(
         checkpoint.get(
             "rng_state",
@@ -552,10 +540,7 @@ def load_checkpoint(
     return checkpoint
 
 
-# ============================================================
 # HISTORY
-# ============================================================
-
 def save_history(
     history: list,
     history_file: Path,
@@ -578,10 +563,7 @@ def save_history(
         )
 
 
-# ============================================================
 # CONFIG
-# ============================================================
-
 def save_training_config(
     args: argparse.Namespace,
     dataset: SROIEDataset,
@@ -680,10 +662,7 @@ def save_training_config(
         )
 
 
-# ============================================================
 # METRICS PRINT
-# ============================================================
-
 def print_epoch_metrics(
     epoch: int,
     total_epochs: int,
@@ -804,10 +783,7 @@ def print_epoch_metrics(
     print("=" * 75)
 
 
-# ============================================================
 # BEST MODEL METADATA
-# ============================================================
-
 def save_best_model_metadata(
     best_model_dir: Path,
     epoch: int,
@@ -851,10 +827,7 @@ def save_best_model_metadata(
         )
 
 
-# ============================================================
 # SAVE PROCESSOR
-# ============================================================
-
 def save_processor(
     dataset: SROIEDataset,
     best_model_dir: Path,
@@ -872,10 +845,7 @@ def save_processor(
     )
 
 
-# ============================================================
 # SAVE BEST MODEL
-# ============================================================
-
 def save_best_model(
     trainer: LayoutLMTrainer,
     dataset: SROIEDataset,
@@ -913,8 +883,7 @@ def save_best_model(
 def main():
 
     args = parse_args()
-
-
+    
     train_samples = parse_optional_int(
         args.train_samples
     )

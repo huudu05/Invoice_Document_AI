@@ -2,14 +2,6 @@ import argparse
 import json
 import os
  
-# ------------------------------------------------------------
-# Phải đặt TRƯỚC import paddle/paddleocr (qua OCRProcessor) để
-# tránh lỗi "Descriptors cannot be created directly" khi protobuf
-# trong venv mới hơn bản PaddlePaddle được biên dịch sẵn.
-# ------------------------------------------------------------
- 
-os.environ.setdefault("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", "python")
- 
 from pathlib import Path
  
 from src.input_processing.input_manager import InputManager

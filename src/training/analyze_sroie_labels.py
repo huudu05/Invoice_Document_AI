@@ -57,13 +57,8 @@ def main():
                 f"{count:>7} "
                 f"({percentage:>6.2f}%)"
             )
-            # 0: S-COMPANY       2689 (  3.71%)
-            # 1: S-DATE           730 (  1.01%)
-            # 2: S-ADDRESS       6906 (  9.54%)
-            # 3: S-TOTAL          642 (  0.89%)
-            # 4: O              61423 ( 84.85%)
 
-        print(f"\nTotal tokens: {total}") # Total tokens: 72390
+        print(f"\nTotal tokens: {total}")
 
 
 if __name__ == "__main__":
