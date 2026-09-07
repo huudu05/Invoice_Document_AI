@@ -8,13 +8,9 @@ from typing import Optional, List, Tuple
 class QueryInfo:
  
     original_query: str
- 
     intent: str
- 
     company: Optional[str]
- 
     keywords: List[str]
-
     date_from: Optional[str] = None
     date_to: Optional[str] = None
     company_b: Optional[str] = None  # second company, only for "compare"
@@ -112,7 +108,6 @@ class QueryProcessor:
  
         intent = self._detect_intent(normalized_query)
 
- 
         # Aggregate intents have their own extraction logic.
         if intent.startswith("aggregate_"):
  
@@ -302,7 +297,7 @@ class QueryProcessor:
         normalized_query = self._normalize_text(query)
  
         pattern = (
-            r"compare\s+(?:spending\s+(?:of|for)\s+)?(?:between\s+)?"
+            r"compare\s+(?:spending\s+)?(?:of|for|between)?\s*"
             r"(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)"
             r"(?:\s+in|\s+from|\?|$)"
         )
@@ -338,6 +333,12 @@ class QueryProcessor:
  
         company = re.sub(
             r"\s+(is|has|on|was|were|does|do)$",
+            "",
+            company,
+            flags=re.IGNORECASE,
+        )
+        company = re.sub(
+            r"\s+invoice(?:'s)?$",
             "",
             company,
             flags=re.IGNORECASE,

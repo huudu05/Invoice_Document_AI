@@ -13,8 +13,8 @@ COLLECTION_NAME = "invoices"
  
 SEMANTIC_WEIGHT = 1.00
 COMPANY_WEIGHT = 0.50
-INTENT_WEIGHT = 0.20
-FIELD_WEIGHT = 0.10
+
+FIELD_AVAILABILITY_WEIGHT = 0.30
  
 DEFAULT_CANDIDATE_MULTIPLIER = 2
 MIN_CANDIDATE_COUNT = 10
@@ -120,18 +120,15 @@ class InvoiceRetriever:
             company_score = self._company_match_score(
                 query_info.company, metadata
             )
-            intent_score = self._intent_match_score(
-                query_info.intent, metadata
-            )
-            field_score = self._field_availability_score(
+
+            field_availability_score = self._field_availability_score(
                 query_info.intent, metadata
             )
  
             final_score = (
                 SEMANTIC_WEIGHT * semantic_score
                 + COMPANY_WEIGHT * company_score
-                + INTENT_WEIGHT * intent_score
-                + FIELD_WEIGHT * field_score
+                + FIELD_AVAILABILITY_WEIGHT * field_availability_score
             )
  
             has_company_query = bool(query_info.company)
@@ -143,8 +140,7 @@ class InvoiceRetriever:
  
             candidate["semantic_score"] = semantic_score
             candidate["company_score"] = company_score
-            candidate["intent_score"] = intent_score
-            candidate["field_score"] = field_score
+            candidate["field_availability_score"] = field_availability_score
             candidate["final_score"] = final_score
             candidate["is_company_match"] = is_company_match
             candidate["is_relevant"] = is_relevant
@@ -195,26 +191,6 @@ class InvoiceRetriever:
         return min(token_score, 1.0)
  
  
-    def _intent_match_score(
-        self,
-        intent: str,
-        metadata: Dict[str, Any],
-    ) -> float:
- 
-        field_map = {
-            "total": "total",
-            "date": "date",
-            "address": "address",
-            "company": "company",
-        }
- 
-        field_name = field_map.get(intent)
-        if not field_name:
-            return 0.0
- 
-        return 1.0 if self._has_value(metadata.get(field_name)) else 0.0
- 
- 
     def _field_availability_score(
         self,
         intent: str,
@@ -261,8 +237,6 @@ class InvoiceRetriever:
         if value is None:
             return False
         return bool(str(value).strip())
- 
- 
 
 def search_invoice(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
     retriever = InvoiceRetriever()
@@ -273,9 +247,9 @@ if __name__ == "__main__":
     retriever = InvoiceRetriever()
  
     test_queries = [
-        "Hóa đơn của HOME MASTER HARDWARE có tổng tiền bao nhiêu?",
-        "Địa chỉ của LIGHTROOM GALLERY là gì?",
-        "Tổng tiền hóa đơn APPLE là bao nhiêu?",
+        "What is the total amount of the HOME MASTER HARDWARE invoice?",
+        "What is the address of LIGHTROOM GALLERY?",
+        "What is the total amount of the APPLE invoice?",
     ]
  
     for query in test_queries:
