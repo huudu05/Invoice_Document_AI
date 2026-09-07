@@ -66,27 +66,30 @@ def extract_and_index(
     if not ocr_result.pages:
         raise ValueError("No text was detected on this invoice.")
  
+    layout_inputs = pipeline["box_builder"].build(pages, ocr_result)
+ 
     base_name = Path(uploaded_file.name).stem
-    is_multi_page = len(ocr_result.pages) > 1
+    is_multi_page = len(layout_inputs) > 1
  
     store = ChromaInvoiceStore(persist_directory=chroma_dir)
     Path(inference_dir).mkdir(parents=True, exist_ok=True)
  
     results = []
  
-    for image, page in zip(pages, ocr_result.pages):
+    for ocr_page, layout_input in zip(ocr_result.pages, layout_inputs):
  
-        if not page.words:
+        if not layout_input.words:
             continue
  
-        words = [w.text for w in page.words]
-        boxes = [pipeline["box_builder"].quad_to_box(w.bbox) for w in page.words]
- 
-        structured = pipeline["model"].predict(image=image, words=words, boxes=boxes)
+        structured = pipeline["model"].predict(
+            image=layout_input.image,
+            words=layout_input.words,
+            boxes=layout_input.boxes,
+        )
         normalized = pipeline["normalizer"].normalize(structured)
  
         invoice_id = (
-            f"{base_name}_p{page.page_number}" if is_multi_page else base_name
+            f"{base_name}_p{layout_input.page_number}" if is_multi_page else base_name
         )
  
         store.add_invoice(invoice_id, normalized)
@@ -96,7 +99,7 @@ def extract_and_index(
             json.dump(
                 {
                     "input_file": uploaded_file.name,
-                    "page_number": page.page_number,
+                    "page_number": layout_input.page_number,
                     "structured": structured,
                     "normalized": normalized,
                 },
@@ -105,7 +108,7 @@ def extract_and_index(
                 ensure_ascii=False,
             )
  
-        vis_image = pipeline["visualizer"].visualize_page(image, page)
+        vis_image = pipeline["visualizer"].visualize_page(layout_input.image, ocr_page)
  
         results.append({
             "invoice_id": invoice_id,
