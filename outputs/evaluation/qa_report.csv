@@ -1,0 +1,16 @@
+id,question,expected_intent,predicted_intent,intent_correct,expected_type,answer_correct,answer,success
+q01,What is the total amount of the HOME MASTER HARDWARE invoice?,total,total,True,field_value,True,15.9,True
+q02,What is the date of the HOME MASTER invoice?,date,date,True,field_value,True,2017-12-22,True
+q03,What is the address of LIGHTROOM GALLERY?,address,address,True,field_value,True,"No:28,JALAN ASTANA 1C BANDAR BUKIT RAJA, 41050 KLANG SELANGOR D.E, MALAYSIA",True
+q04,What is the total spending across all invoices?,aggregate_sum,aggregate_sum,True,exact_number,True,The total spending across all invoices is 104.8.,True
+q05,What is the total spending for HOME MASTER?,aggregate_sum,aggregate_sum,True,exact_number,True,The total spending for Home Master is 31.8.,True
+q06,How many invoices are in the system?,aggregate_count,aggregate_count,True,exact_number,True,There are 3 invoices in the system.,True
+q07,Which company has the highest total spending?,aggregate_top,aggregate_top,True,exact_number,True,"LIGHTROOM GALLERY SDN BHD has the highest total spending, with a total of 73.0.",True
+q08,What is the total amount of the ZZZ NONEXISTENT COMPANY invoice?,total,total,True,refusal,True,No invoice matching the question was found.,False
+q09,Compare spending between HOME MASTER and LIGHTROOM,aggregate_compare,aggregate_compare,True,manual_review,,"Based on the data, here is the spending comparison between HOME MASTER and LIGHTROOM:
+
+* **HOME MASTER:** Total spending is 31.8 across 2 invoices, with an average of 15.9 per invoice.
+* **LIGHTROOM:** Total spending is 73.0 across 1 invoice, with an average of 73.0 per invoice.
+
+In comparison, LIGHTROOM has a higher total spending (73.0 vs. 31.8) and a higher average cost per invoice (73.0 vs. 15.9) than HOME MASTER.",True
+q10,,general,general,True,refusal,True,,False

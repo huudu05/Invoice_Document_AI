@@ -30,22 +30,24 @@ class LayoutLMInputBuilder:
             int(1000 * ymax / height)
         ]
 
-    def build(self, images: list[Image.Image], ocr_result:OCRResult):
+    def build(self, images: list[Image.Image], ocr_result:OCRResult, normalize: bool = False):
         outputs = []
         for image, page in zip(images, ocr_result.pages):
             words = []
             boxes = []
             word_ids = []
-
+ 
             width, height = image.size
-
+ 
             for word in page.words:
                 words.append(word.text)
                 word_ids.append(word.id)
+ 
                 box = self.quad_to_box(word.bbox)
-                box = self._normalize_box(box, width, height)
+                if normalize:
+                    box = self._normalize_box(box, width, height)
                 boxes.append(box)
-
+ 
             outputs.append(LayoutLMInput(
                 page_number=page.page_number,
                 image=image,

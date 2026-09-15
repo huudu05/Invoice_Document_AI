@@ -24,6 +24,10 @@ env/
 .pytest_cache/
 .mypy_cache/
 
+# Output
+outputs/
+
+
 # Data
 data/
 datasets/

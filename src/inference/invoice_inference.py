@@ -11,9 +11,8 @@ from src.ocr.ocr_processor import OCRProcessor
 from src.inference.input_builder import LayoutLMInputBuilder
 from src.inference.layoutlmv3_inference import LayoutLMv3Inference
 from src.processing.invoice_normalizer import InvoiceNormalizer
- 
-DEFAULT_MODEL_DIR = Path("models/layoutlmv3/best_model")
-DEFAULT_OUTPUT_DIR = Path("outputs/inference")
+from src.config import DEFAULT_MODEL_DIR, DEFAULT_OUTPUT_DIR_INFERENCE
+
 
 logger = get_logger(__name__)
  
@@ -31,7 +30,7 @@ def parse_args() -> argparse.Namespace:
         help="Path to fine-tuned LayoutLMv3 model.",
     )
     parser.add_argument(
-        "--output-dir", type=str, default=str(DEFAULT_OUTPUT_DIR),
+        "--output-dir", type=str, default=str(DEFAULT_OUTPUT_DIR_INFERENCE),
         help="Directory for inference outputs (JSON).",
     )
  

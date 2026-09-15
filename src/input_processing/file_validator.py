@@ -1,14 +1,7 @@
 from pathlib import Path
 from dataclasses import dataclass, field
 
-
-ALLOWED_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
-
-MAX_FILE_SIZE_MB = 20
-
-MIN_IMAGE_WIDTH = 300
-MIN_IMAGE_HEIGHT = 300
-
+from src.config import MAX_FILE_SIZE_MB, MIN_IMAGE_WIDTH, MIN_IMAGE_HEIGHT, ALLOWED_EXTENSIONS 
 
 
 @dataclass

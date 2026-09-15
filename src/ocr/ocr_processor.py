@@ -31,7 +31,8 @@ class OCRProcessor:
         for page in pages:
             page = np.array(page)
             result = self.ocr.ocr(page, cls=True)
-            raw_results.append(result[0])
+            page_result = result[0] if result else None
+            raw_results.append(page_result or [])
         return self.parser.parse(raw_results)
 
 if __name__ == "__main__":

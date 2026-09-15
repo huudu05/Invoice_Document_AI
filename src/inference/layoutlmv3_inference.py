@@ -106,7 +106,8 @@ class LayoutLMv3Inference:
         image: Image.Image,
         words: List[str],
         boxes: List[List[int]],
-    ) -> Dict[str, str]:
+        return_word_labels: bool = False,
+    ):
 
 
         # VALIDATION
@@ -271,4 +272,12 @@ class LayoutLMv3Inference:
                 f"{key:<15}: {value}"
             )
 
-        return entities
+        if not return_word_labels:
+            return entities
+
+        word_labels = [
+            self.id2label.get(prediction, "O")
+            for prediction in word_predictions
+        ]
+
+        return entities, word_labels

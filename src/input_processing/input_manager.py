@@ -3,6 +3,7 @@ from typing import List
 
 from PIL import Image
 
+from src.config import POPPLER_PATH
 from src.input_processing.pdf_loader import PdfLoader
 from src.input_processing.image_loader import ImageLoader
 from src.input_processing.file_validator import FileValidator
@@ -15,7 +16,7 @@ class InputManager:
 
     def __init__(self):
         self.validator = FileValidator()
-        self.pdf_loader = PdfLoader(poppler_path="C:\\Program Files\\poppler-26.02.0\\Library\\bin")
+        self.pdf_loader = PdfLoader(poppler_path=POPPLER_PATH)
         self.image_loader = ImageLoader()
 
     def load(self, file_path: str | Path) -> List[Image.Image]:

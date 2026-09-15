@@ -1,5 +1,5 @@
 {
-    "input_file": "invoice.pdf",
+    "input_file": "test_iv.pdf",
     "page_number": 1,
     "structured": {
         "company": "HOME MASTER HARDWARE& ELECTRICAL",

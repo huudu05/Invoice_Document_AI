@@ -20,24 +20,23 @@ from transformers import (
 )
 
 from src.training.sroie_dataset import SROIEDataset
-
-DEFAULT_MODEL_DIR = Path(
-    "models/layoutlmv3/best_model"
+from src.config import (
+    DEFAULT_MODEL_DIR,
+    DEFAULT_OUTPUT_DIR,
+    DEFAULT_BATCH_SIZE,
+    DEFAULT_NUM_WORKERS
 )
 
-DEFAULT_OUTPUT_DIR = Path(
-    "models/layoutlmv3/evaluation/test"
-)
 
 DEFAULT_BATCH_SIZE = 2
 DEFAULT_NUM_WORKERS = 0
+
 
 def parse_args() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(
         description=(
-            "Evaluate fine-tuned LayoutLMv3 "
-            "on the SROIE test set."
+            "Evaluate fine-tuned LayoutLMv3 on the SROIE test set."
         )
     )
 

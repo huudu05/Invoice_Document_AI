@@ -1,7 +1,6 @@
 import argparse
 import json
 import os
- 
 from pathlib import Path
  
 from src.input_processing.input_manager import InputManager
@@ -13,11 +12,13 @@ from src.processing.invoice_normalizer import InvoiceNormalizer
 from src.knowledge_base.chroma_store import ChromaInvoiceStore
 from src.pipeline.invoice_qa import InvoiceQA
 from src.inference.invoice_inference import print_result
+from src.config import(
+    DEFAULT_MODEL_DIR,
+    CHROMA_DIR,
+    DEFAULT_OUTPUT_DIR_INFERENCE,
+) 
  
- 
-DEFAULT_MODEL_DIR = Path("models/layoutlmv3/best_model")
-DEFAULT_CHROMA_DIR = Path("data/chroma")
-DEFAULT_INFERENCE_DIR = Path("outputs/inference")
+
  
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -26,8 +27,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", required=True, help="Invoice PDF/PNG/JPG.")
     parser.add_argument("--question", required=True, help="Question to ask.")
     parser.add_argument("--model-dir", default=str(DEFAULT_MODEL_DIR))
-    parser.add_argument("--chroma-dir", default=str(DEFAULT_CHROMA_DIR))
-    parser.add_argument("--inference-dir", default=str(DEFAULT_INFERENCE_DIR))
+    parser.add_argument("--chroma-dir", default=str(CHROMA_DIR))
+    parser.add_argument("--inference-dir", default=str(DEFAULT_OUTPUT_DIR_INFERENCE))
     return parser.parse_args()
  
 def extract_and_index(
@@ -43,8 +44,10 @@ def extract_and_index(
     ocr_result = OCRProcessor().recognize(pages)
     if not ocr_result.pages:
         raise SystemExit("[ERROR] OCR detected no pages.")
- 
+    
     box_builder = LayoutLMInputBuilder()
+    layout_inputs = box_builder.build(pages, ocr_result)
+
     model = LayoutLMv3Inference(model_path=str(model_dir))
     normalizer = InvoiceNormalizer()
  
@@ -52,24 +55,25 @@ def extract_and_index(
     inference_dir.mkdir(parents=True, exist_ok=True)
  
     base_name = input_path.stem
-    is_multi_page = len(ocr_result.pages) > 1
+    is_multi_page = len(layout_inputs) > 1
  
     indexed_ids = []
  
-    for image, page in zip(pages, ocr_result.pages):
+    for layout_input in layout_inputs:
  
-        if not page.words:
-            print(f"[WARNING] Page {page.page_number} has no OCR text. Skipping.")
+        if not layout_input.words:
+            print(f"[WARNING] Page {layout_input.page_number} has no OCR text. Skipping.")
             continue
  
-        words = [w.text for w in page.words]
-        boxes = [box_builder.quad_to_box(w.bbox) for w in page.words]
- 
-        structured = model.predict(image=image, words=words, boxes=boxes)
+        structured = model.predict(
+            image=layout_input.image,
+            words=layout_input.words,
+            boxes=layout_input.boxes,
+        )
         normalized = normalizer.normalize(structured)
  
         invoice_id = (
-            f"{base_name}_p{page.page_number}" if is_multi_page else base_name
+            f"{base_name}_p{layout_input.page_number}" if is_multi_page else base_name
         )
  
         print_result(f"NORMALIZED INVOICE — {invoice_id}", normalized)
@@ -81,7 +85,7 @@ def extract_and_index(
             json.dump(
                 {
                     "input_file": str(input_path),
-                    "page_number": page.page_number,
+                    "page_number": layout_input.page_number,
                     "structured": structured,
                     "normalized": normalized,
                 },
@@ -141,4 +145,3 @@ def main():
  
 if __name__ == "__main__":
     main()
- 

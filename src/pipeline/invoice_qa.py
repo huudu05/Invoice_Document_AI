@@ -12,11 +12,10 @@ from src.generation.llm_generator import (
     LLMGenerator,
 )
 from src.analytics.invoice_analytics import InvoiceAnalytics
-
-
-DEFAULT_TOP_K = 5
-
-MIN_RELEVANCE_SCORE = 0.80
+from src.config import (
+    DEFAULT_TOP_K,
+    MIN_RELEVANCE_SCORE,
+)
 
 
 class InvoiceQA:

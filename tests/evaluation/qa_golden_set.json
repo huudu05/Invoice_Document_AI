@@ -1,0 +1,69 @@
+[
+  {
+    "id": "q01",
+    "question": "What is the total amount of the HOME MASTER HARDWARE invoice?",
+    "intent": "total",
+    "expected_type": "field_value",
+    "expected_value": "15.9"
+  },
+  {
+    "id": "q02",
+    "question": "What is the date of the HOME MASTER invoice?",
+    "intent": "date",
+    "expected_type": "field_value",
+    "expected_value": "2017-12-22"
+  },
+  {
+    "id": "q03",
+    "question": "What is the address of LIGHTROOM GALLERY?",
+    "intent": "address",
+    "expected_type": "field_value",
+    "expected_value": "jalan astana"
+  },
+  {
+    "id": "q04",
+    "question": "What is the total spending across all invoices?",
+    "intent": "aggregate_sum",
+    "expected_type": "exact_number",
+    "company": null
+  },
+  {
+    "id": "q05",
+    "question": "What is the total spending for HOME MASTER?",
+    "intent": "aggregate_sum",
+    "expected_type": "exact_number",
+    "company": "HOME MASTER"
+  },
+  {
+    "id": "q06",
+    "question": "How many invoices are in the system?",
+    "intent": "aggregate_count",
+    "expected_type": "exact_number",
+    "company": null
+  },
+  {
+    "id": "q07",
+    "question": "Which company has the highest total spending?",
+    "intent": "aggregate_top",
+    "expected_type": "exact_number",
+    "company": null
+  },
+  {
+    "id": "q08",
+    "question": "What is the total amount of the ZZZ NONEXISTENT COMPANY invoice?",
+    "intent": "total",
+    "expected_type": "refusal"
+  },
+  {
+    "id": "q09",
+    "question": "Compare spending between HOME MASTER and LIGHTROOM",
+    "intent": "aggregate_compare",
+    "expected_type": "manual_review"
+  },
+  {
+    "id": "q10",
+    "question": "",
+    "intent": "general",
+    "expected_type": "refusal"
+  }
+]

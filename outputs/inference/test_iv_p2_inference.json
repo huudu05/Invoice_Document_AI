@@ -1,0 +1,16 @@
+{
+    "input_file": "test_iv.pdf",
+    "page_number": 2,
+    "structured": {
+        "company": "TEO HENG STATIONERY &BOK",
+        "date": "Date18/01/2018",
+        "address": "SELANGOR DARUL EHSAN",
+        "total": "4.90"
+    },
+    "normalized": {
+        "company": "TEO HENG STATIONERY &BOK",
+        "date": "2018-01-18",
+        "address": "SELANGOR DARUL EHSAN",
+        "total": 4.9
+    }
+}

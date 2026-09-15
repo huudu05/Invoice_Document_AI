@@ -13,30 +13,21 @@ from src.training.sroie_dataset import SROIEDataset
 from src.training.layoutlm_trainer import LayoutLMTrainer
 
 
-SEED = 42
-
-MODEL_NAME = "microsoft/layoutlmv3-base"
-
-VAL_RATIO = 0.10
-
-EPOCHS = 10
-BATCH_SIZE = 2
-
-LEARNING_RATE = 5e-5
-WEIGHT_DECAY = 0.01
-
-WARMUP_RATIO = 0.10
-
-GRADIENT_ACCUMULATION_STEPS = 1
-GRADIENT_CLIP_MAX_NORM = 1.0
-
-NUM_WORKERS = 0
-
-EARLY_STOPPING_PATIENCE = 3
-MIN_DELTA = 1e-4
-
-OUTPUT_DIR = Path(
-    "models/layoutlmv3"
+from src.config import (
+    SEED,
+    MODEL_NAME,
+    VAL_RATIO,
+    EPOCHS,
+    BATCH_SIZE,
+    LEARNING_RATE,
+    WEIGHT_DECAY,
+    WARMUP_RATIO,
+    GRADIENT_ACCUMULATION_STEPS,
+    GRADIENT_CLIP_MAX_NORM,
+    NUM_WORKERS,
+    EARLY_STOPPING_PATIENCE,
+    MIN_DELTA,
+    OUTPUT_DIR
 )
 
 
