@@ -52,18 +52,18 @@ Lưu trữ vector (ChromaDB)
 **Giai đoạn 2 — Xử lý câu hỏi**
 
 ```text
-Câu hỏi người dùng (ngôn ngữ tự nhiên)
-        ↓
-Phân tích truy vấn (query processing, intent)
-        ↓
+        Câu hỏi người dùng (ngôn ngữ tự nhiên)
+                        ↓
+        Phân tích truy vấn (query processing, intent)
+                        ↓
    ┌────────────────────┴────────────────────┐
-   ↓                                          ↓
+   ↓                                         ↓
 Semantic Retrieval                    Invoice Analytics
 (re-ranking hóa đơn liên quan)        (tính tổng, đếm, so sánh)
    └────────────────────┬────────────────────┘
-                         ↓
+                        ↓
               LLM sinh câu trả lời
-                         ↓
+                        ↓
               Câu trả lời bằng ngôn ngữ tự nhiên
 ```
 
@@ -100,7 +100,7 @@ Phiên bản HuggingFace sử dụng trong dự án: [`mp-02/sroie`](https://hug
 ### 1. Clone dự án
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/huudu05/Invoice_Document_AI.git
 cd invoice-document-ai
 ```
 
@@ -190,8 +190,7 @@ python -m streamlit run app.py
 
 ## Kết quả
 
-Chi tiết số liệu huấn luyện, đánh giá end-to-end và kiểm thử hệ thống được trình bày đầy đủ trong báo cáo đồ án (Chương 4). Một số biểu đồ minh họa được đính kèm bên dưới:
-
+Chi tiết số liệu huấn luyện, đánh giá end-to-end và kiểm thử hệ thống.
 **Loss trong quá trình huấn luyện**
 
 <p align="center">
